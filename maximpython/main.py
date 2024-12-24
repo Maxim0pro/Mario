@@ -96,14 +96,9 @@ anim_count = 0
 mario_speed = 10
 mario_x, mario_y = 10, 192
 mushroom_x, mushroom_y = 200, 201
-mushroom_x2, mushroom_y2 = 700, 464
-mushroom_x3, mushroom_y3 = 400, 728
-mushroom_x4, mushroom_y4 = 900, 201
-mushroom_x5, mushroom_y5 = 150, 464
-mushroom_x6, mushroom_y6 = 800, 728
+mushroom_x2, mushroom_y2 = 900, 464
+mushroom_x3, mushroom_y3 = 300, 728
 jump_count = 6
-border_left = 0
-border_right = 495
 border_top = 0
 border_bottom = 50
 mushroom_direction = 1
@@ -112,8 +107,9 @@ mushroom_frame = 0
 animation_speed = 30
 star_time = 61
 current_time = star_time
-fall_border_x = 1210
-floor_y = 455
+fall_start_x = 1210
+fall_end_y = 455
+
 
 # Текст и цвет для надписи "Game Over"
 text = 'game over'
@@ -226,18 +222,11 @@ while running:
     win.blit(bg_image, (0, 0))
 
     # Позиции значков опыта
-    xp_positions = [(20, 20), (55, 20), (90, 20)]
+    xp_positions = [(20, 20), (67, 20), (114, 20)]
 
     # Отображение значков опыта
     for pos in xp_positions:
         win.blit(xp_image, pos)
-
-    # Прямоугольники для проверки столкновений
-    player_rect = mario_left[0].get_rect(topleft=(mario_x, mario_y))
-    mushroom_rect = mushroom_images[0].get_rect(topleft=(mushroom_x, mushroom_y))
-    # Проверка столкновения игрока с грибом
-    if player_rect.colliderect(mushroom_rect):
-        draw_text(win, text, color, text_x, text_y)
 
     # Получение состояний клавиш
     keys = pg.key.get_pressed()
@@ -276,18 +265,6 @@ while running:
     elif keys[pg.K_a] or keys[pg.K_d]:
         anim_count += 1
 
-    # Движение гриба
-    mushroom_x += mushroom_speed * mushroom_direction
-
-    # Изменение направления движения гриба при достижении границ
-    if mushroom_x <= border_left or mushroom_x >= border_right - mushroom_images[0].get_width():
-        mushroom_direction *= -1
-
-    # Обновление текущей картинки гриба
-    mushroom_frame += 1
-    if mushroom_frame >= animation_speed:
-        mushroom_frame = 0
-
     # Выбор текущего изображения гриба
     current_mushroom_image = mushroom_images[mushroom_frame // (animation_speed // len(mushroom_images))]
 
@@ -295,9 +272,35 @@ while running:
     win.blit(current_mushroom_image, (mushroom_x, mushroom_y))
     win.blit(current_mushroom_image, (mushroom_x2, mushroom_y2))
     win.blit(current_mushroom_image, (mushroom_x3, mushroom_y3))
-    win.blit(current_mushroom_image, (mushroom_x4, mushroom_y4))
-    win.blit(current_mushroom_image, (mushroom_x5, mushroom_y5))
-    win.blit(current_mushroom_image, (mushroom_x6, mushroom_y6))
+
+    # Прямоугольники для проверки столкновений
+    player_rect = mario_left[0].get_rect(topleft=(mario_x, mario_y))
+    mushroom_rect = mushroom_images[0].get_rect(topleft=(mushroom_x, mushroom_y))
+    mushroom_rect2 = mushroom_images[0].get_rect(topleft=(mushroom_x2, mushroom_y2))
+    mushroom_rect6 = mushroom_images[0].get_rect(topleft=(mushroom_x3, mushroom_y3))
+
+    # Проверка столкновения игрока с грибом
+    if player_rect.colliderect(mushroom_rect and mushroom_rect2):
+        draw_text(win, text, color, text_x, text_y)
+    if player_rect.colliderect(mushroom_rect6):
+        draw_text(win, text, color, text_x, text_y)
+
+    mushroom_x += mushroom_speed * mushroom_direction
+    mushroom_x2 += mushroom_speed * mushroom_direction
+    mushroom_x3 += mushroom_speed * mushroom_direction
+
+    # Изменение направления движения гриба при достижении границ
+    if mushroom_x <= 0 or mushroom_x >= 495 - mushroom_images[0].get_width():
+        mushroom_direction *= -1
+    if mushroom_x2 <= 0 or mushroom_x2 >= 1100 - mushroom_images[0].get_width():
+        mushroom_direction *= -1
+    if mushroom_x3 <= 0 or mushroom_x3 >= 1300 - mushroom_images[0].get_width():
+        mushroom_direction *= -1
+
+    # Обновление текущей картинки гриба
+    mushroom_frame += 1
+    if mushroom_frame >= animation_speed:
+        mushroom_frame = 0
 
     # Время, прошедшее с последнего обновления
     dt = clock.tick(140) / 100
@@ -306,31 +309,24 @@ while running:
     current_time -= dt
     if current_time <= 0:
         current_time = 0
+    if current_time == 0:
+        draw_text(win, text, color, text_x, text_y)
 
     # Отображение оставшегося времени
-    time_text = time_font.render(f'Time: {int(current_time)}', True, ('blue'))
+    time_text = time_font.render(f'Time: {int(current_time)}', True, ('Blue'))
     win.blit(time_text, (600, 20))
 
     # Падение Марио через пропасть
-    if mario_x >= fall_border_x:
-        if mario_y < floor_y:
-            mario_y += 10
-        else:
-            mario_y = floor_y
+    if mario_x >= fall_start_x:
+        mario_y += 15
+        if mario_y >= fall_end_y:
+            mario_y = fall_end_y
+
 
     # Обновление положения снежинок
     for snowflake in snowflakes:
         win.blit(snowflake.image, snowflake.rect)
         snowflake.update()
-
-    # Обработка событий
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            running = False
-        elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_ESCAPE:
-                pause_sound.play()
-                game_paused = not game_paused
 
     # Отображение паузы
     if game_paused:
@@ -342,12 +338,17 @@ while running:
         draw_text(win, text, color, text_x, text_y)
         game_over = True
 
+    # Обработка событий
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            running = False
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_ESCAPE:
+                pause_sound.play()
+                game_paused = not game_paused
+
     # Ограничение частоты кадров
     clock.tick(15)
 
     # Обновление дисплея
     pg.display.update()
-
-
-
-
